@@ -34,7 +34,7 @@ public static class SupplierEtlOrchestrator
             nameof(SupplierActivities.LoadPendingRetryActivity),
             startedRun.RunId);
 
-        var dispatchQueue = classified.Concat(pendingRetry).ToArray();
+        var dispatchQueue = BuildDispatchQueue(classified, pendingRetry);
 
         var dispatchTasks = new List<Task<DispatchResult>>();
         foreach (var item in dispatchQueue)
@@ -51,5 +51,32 @@ public static class SupplierEtlOrchestrator
         await context.CallActivityAsync(nameof(SupplierActivities.CompleteRunActivity), (startedRun.RunId, metrics));
 
         return metrics;
+    }
+
+    private static IReadOnlyCollection<SupplierDispatchItem> BuildDispatchQueue(
+        IReadOnlyCollection<SupplierDispatchItem> classified,
+        IReadOnlyCollection<SupplierDispatchItem> pendingRetry)
+    {
+        // Build dispatch queue with supplier-level deduplication, prioritizing classified items over retry items.
+        var dispatchQueue = new List<SupplierDispatchItem>();
+        var seenSupplierIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var item in classified)
+        {
+            if (seenSupplierIds.Add(item.Supplier.SupplierId))
+            {
+                dispatchQueue.Add(item);
+            }
+        }
+
+        foreach (var item in pendingRetry)
+        {
+            if (seenSupplierIds.Add(item.Supplier.SupplierId))
+            {
+                dispatchQueue.Add(item);
+            }
+        }
+
+        return dispatchQueue;
     }
 }
