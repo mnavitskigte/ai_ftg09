@@ -2,6 +2,47 @@
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.5.
 
+## Run with API (Recommended)
+
+From the workspace root in VS Code, use the predefined tasks in `.vscode/tasks.json`:
+
+- `Run Frontend`
+- `Run API`
+- `Run API + Frontend` (starts both in parallel)
+
+### Start
+1. Open Command Palette (`Ctrl+Shift+P`)
+2. Run `Tasks: Run Task`
+3. Select `Run API + Frontend`
+
+### URLs
+- Frontend: `http://localhost:4200`
+- API: `http://localhost:5172`
+- Swagger: `http://localhost:5172/swagger`
+
+### Stop
+- Use `Tasks: Terminate Task` for `Run Frontend` / `Run API`, or press `Ctrl+C` in each task terminal.
+
+### Dashboard data mode
+- The dashboard defaults to **Mock** mode on load.
+- Use the **Data Source** selector in the header to switch between `Mock` and `Real (DB)`.
+
+## Troubleshooting
+
+- **API port conflict (`5172` already in use)**
+	```powershell
+	Get-NetTCPConnection -LocalPort 5172 | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ -Force }
+	```
+
+- **Frontend loads but API calls fail**
+	- Verify API is running: `http://localhost:5172/swagger`.
+	- Verify app points to `http://localhost:5172` in `src/environments/environment.ts`.
+	- Verify API key values match between frontend and backend config.
+
+- **Mock mode selected but little/no data appears**
+	- Check header Data Source is `Mock`.
+	- Use the card header "Mock source" label to confirm if data is from API or local fallback.
+
 ## Development server
 
 To start a local development server, run:

@@ -2,6 +2,19 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Free API Port 5172",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "$port=5172; $pids = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique; if ($pids) { $pids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue } }"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "Run API",
       "type": "shell",
       "command": "dotnet",
@@ -9,6 +22,9 @@
         "run",
         "--project",
         "backend/api/EtlApi.csproj"
+      ],
+      "dependsOn": [
+        "Free API Port 5172"
       ],
       "isBackground": true,
       "problemMatcher": []
