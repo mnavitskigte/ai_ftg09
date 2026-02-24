@@ -51,4 +51,116 @@
     </table>
     <p *ngIf="selectedJobLogs.length === 0">No logs found.</p>
   </div>
+
+  <div class="runs">
+    <h3>Supplier ETL Run Statistics</h3>
+    <div class="run-filters">
+      <label>
+        From:
+        <input type="datetime-local" [(ngModel)]="runFilterFrom" />
+      </label>
+      <label>
+        To:
+        <input type="datetime-local" [(ngModel)]="runFilterTo" />
+      </label>
+      <button (click)="applyRunFilter()">Apply</button>
+      <button (click)="clearRunFilter()">Clear</button>
+    </div>
+    <div *ngIf="loadingRuns" class="loading">Loading run statistics…</div>
+    <table *ngIf="!loadingRuns && supplierRuns.length > 0">
+      <thead>
+        <tr>
+          <th>Run ID</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Records In</th>
+          <th>Validated</th>
+          <th>Sent</th>
+          <th>Failed</th>
+          <th>Retries</th>
+          <th>Error Rate %</th>
+          <th>P95 (ms)</th>
+          <th>SLA %</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let run of supplierRuns" [class]="'status-' + run.status.toLowerCase()">
+          <td>{{ run.runId }}</td>
+          <td>{{ run.status }}</td>
+          <td>{{ run.startedAt | date:'short' }}</td>
+          <td>{{ run.recordsIn }}</td>
+          <td>{{ run.recordsValidated }}</td>
+          <td>{{ run.recordsSent }}</td>
+          <td>{{ run.recordsFailed }}</td>
+          <td>{{ run.retryCount }}</td>
+          <td>{{ run.errorRatePct }}</td>
+          <td>{{ run.p95LatencyMs ?? '-' }}</td>
+          <td>{{ run.slaCompliancePct ?? '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="!loadingRuns && supplierRuns.length === 0">No ETL run statistics available.</p>
+  </div>
+
+  <div class="retry-queue">
+    <h3>Pending Retry Queue</h3>
+    <div *ngIf="loadingRetryQueue" class="loading">Loading retry queue…</div>
+    <table *ngIf="!loadingRetryQueue && retryQueue.length > 0">
+      <thead>
+        <tr>
+          <th>Supplier ID</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Retry Count</th>
+          <th>Last Retry</th>
+          <th>Next Retry</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let retry of retryQueue">
+          <td>{{ retry.supplierId }}</td>
+          <td>{{ retry.supplierName ?? '-' }}</td>
+          <td>{{ retry.deliveryStatus }}</td>
+          <td>{{ retry.retryAttemptCount }}</td>
+          <td>{{ retry.lastRetryAt ? (retry.lastRetryAt | date:'short') : '-' }}</td>
+          <td>{{ retry.nextRetryAt ? (retry.nextRetryAt | date:'short') : '-' }}</td>
+          <td>
+            <button (click)="loadSupplierHistory(retry.supplierId)">View History</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="!loadingRetryQueue && retryQueue.length === 0">No pending retries.</p>
+  </div>
+
+  <div class="history">
+    <h3>Supplier Change History</h3>
+    <p *ngIf="selectedSupplierId === null">Select a supplier from retry queue to view history.</p>
+    <div *ngIf="loadingHistory" class="loading">Loading supplier history…</div>
+    <div *ngIf="selectedSupplierId !== null && !loadingHistory">
+      <p><strong>Supplier:</strong> {{ selectedSupplierId }}</p>
+      <table *ngIf="supplierHistory.length > 0">
+        <thead>
+          <tr>
+            <th>Snapshot ID</th>
+            <th>Run ID</th>
+            <th>Change Type</th>
+            <th>Changed At</th>
+            <th>Snapshot Hash</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of supplierHistory">
+            <td>{{ item.snapshotId }}</td>
+            <td>{{ item.etlRunId }}</td>
+            <td>{{ item.changeType }}</td>
+            <td>{{ item.changedAt | date:'short' }}</td>
+            <td>{{ item.snapshotHash ?? '-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p *ngIf="supplierHistory.length === 0">No supplier history found.</p>
+    </div>
+  </div>
 </section>

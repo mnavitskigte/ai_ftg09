@@ -21,8 +21,22 @@
   .error   { color: red; }
 
   .logs { margin-top: 1.5rem; }
+  .runs,
+  .retry-queue,
+  .history {
+    margin-top: 1.5rem;
+  }
+
+  .run-filters {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin: 0.75rem 0;
+    flex-wrap: wrap;
+  }
 
   .status-completed { background: #e6ffe6; }
+  .status-partialfailure { background: #fff7e6; }
   .status-failed    { background: #ffe6e6; }
   .status-running   { background: #e6f0ff; }
 }

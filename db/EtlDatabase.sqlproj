@@ -42,9 +42,23 @@
   <ItemGroup>
     <Build Include="Schema\Tables\EtlJob.sql" />
     <Build Include="Schema\Tables\EtlJobLog.sql" />
+    <Build Include="Schema\Tables\SupplierEtlRun.sql" />
+    <Build Include="Schema\Tables\Supplier.sql" />
+    <Build Include="Schema\Tables\SupplierSnapshot.sql" />
+    <Build Include="Schema\Tables\SupplierApiDispatchLog.sql" />
+    <Build Include="Schema\Tables\SupplierValidationLog.sql" />
     <Build Include="Schema\StoredProcedures\usp_StartEtlJob.sql" />
     <Build Include="Schema\StoredProcedures\usp_LogEtlJobResult.sql" />
+    <Build Include="Schema\StoredProcedures\usp_StartSupplierEtlRun.sql" />
+    <Build Include="Schema\StoredProcedures\usp_CompleteSupplierEtlRun.sql" />
+    <Build Include="Schema\StoredProcedures\usp_UpsertSupplierWithSnapshot.sql" />
+    <Build Include="Schema\StoredProcedures\usp_LogSupplierApiDispatch.sql" />
+    <Build Include="Schema\StoredProcedures\usp_LogSupplierValidationFailure.sql" />
+    <Build Include="Schema\StoredProcedures\usp_GetPendingRetrySuppliers.sql" />
     <Build Include="Schema\Views\vw_EtlJobStatus.sql" />
+    <Build Include="Schema\Views\vw_SupplierEtlRunStatistics.sql" />
+    <Build Include="Schema\Views\vw_SupplierChangeHistory.sql" />
+    <Build Include="Schema\Views\vw_SupplierRetryQueue.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" Condition="'$(VisualStudioVersion)' != '' And Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')" />
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v16.0\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" Condition="'$(VisualStudioVersion)' == '' And Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v16.0\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')" />
