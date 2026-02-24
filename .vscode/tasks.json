@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run API",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "backend/api/EtlApi.csproj"
+      ],
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Frontend",
+      "type": "shell",
+      "command": "npm",
+      "args": [
+        "run",
+        "start",
+        "--",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "4200"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Run API + Frontend",
+      "dependsOn": [
+        "Run API",
+        "Run Frontend"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

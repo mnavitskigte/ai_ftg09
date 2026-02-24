@@ -1,166 +1,398 @@
-<section class="etl-jobs">
-  <h2>ETL Jobs</h2>
-
-  <div *ngIf="loading" class="loading">Loading…</div>
-  <div *ngIf="error" class="error">{{ error }}</div>
-
-  <table *ngIf="!loading && jobs.length > 0">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Schedule</th>
-        <th>Enabled</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let job of jobs">
-        <td>{{ job.id }}</td>
-        <td>{{ job.name }}</td>
-        <td><code>{{ job.cronSchedule }}</code></td>
-        <td>{{ job.isEnabled ? '✅' : '❌' }}</td>
-        <td><button (click)="viewLogs(job)">View Logs</button></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <div *ngIf="selectedJobId !== null" class="logs">
-    <h3>Logs for Job #{{ selectedJobId }}</h3>
-    <table *ngIf="selectedJobLogs.length > 0">
-      <thead>
-        <tr>
-          <th>Log ID</th>
-          <th>Status</th>
-          <th>Started</th>
-          <th>Finished</th>
-          <th>Rows</th>
-          <th>Error</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let log of selectedJobLogs" [class]="'status-' + log.status.toLowerCase()">
-          <td>{{ log.id }}</td>
-          <td>{{ log.status }}</td>
-          <td>{{ log.startedAt | date:'short' }}</td>
-          <td>{{ log.finishedAt | date:'short' }}</td>
-          <td>{{ log.rowsProcessed ?? '-' }}</td>
-          <td>{{ log.errorMessage ?? '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p *ngIf="selectedJobLogs.length === 0">No logs found.</p>
-  </div>
-
-  <div class="runs">
-    <h3>Supplier ETL Run Statistics</h3>
-    <div class="run-filters">
-      <label>
-        From:
-        <input type="datetime-local" [(ngModel)]="runFilterFrom" />
-      </label>
-      <label>
-        To:
-        <input type="datetime-local" [(ngModel)]="runFilterTo" />
-      </label>
-      <button (click)="applyRunFilter()">Apply</button>
-      <button (click)="clearRunFilter()">Clear</button>
+<section class="container py-4 d-flex flex-column gap-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex align-items-center gap-2">
+      <h2 class="h3 mb-0">ETL Dashboard</h2>
+      <span *ngIf="isMockMode" class="badge text-bg-warning">MOCK DATA</span>
     </div>
-    <div *ngIf="loadingRuns" class="loading">Loading run statistics…</div>
-    <table *ngIf="!loadingRuns && supplierRuns.length > 0">
-      <thead>
-        <tr>
-          <th>Run ID</th>
-          <th>Status</th>
-          <th>Started</th>
-          <th>Records In</th>
-          <th>Validated</th>
-          <th>Sent</th>
-          <th>Failed</th>
-          <th>Retries</th>
-          <th>Error Rate %</th>
-          <th>P95 (ms)</th>
-          <th>SLA %</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let run of supplierRuns" [class]="'status-' + run.status.toLowerCase()">
-          <td>{{ run.runId }}</td>
-          <td>{{ run.status }}</td>
-          <td>{{ run.startedAt | date:'short' }}</td>
-          <td>{{ run.recordsIn }}</td>
-          <td>{{ run.recordsValidated }}</td>
-          <td>{{ run.recordsSent }}</td>
-          <td>{{ run.recordsFailed }}</td>
-          <td>{{ run.retryCount }}</td>
-          <td>{{ run.errorRatePct }}</td>
-          <td>{{ run.p95LatencyMs ?? '-' }}</td>
-          <td>{{ run.slaCompliancePct ?? '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p *ngIf="!loadingRuns && supplierRuns.length === 0">No ETL run statistics available.</p>
+    <div class="d-flex align-items-center gap-2">
+      <label class="small text-muted mb-0">Data Source</label>
+      <select class="form-select form-select-sm" style="min-width: 150px" [(ngModel)]="dataMode" (ngModelChange)="onDataModeChange()">
+        <option *ngFor="let mode of dataModes" [ngValue]="mode.value">{{ mode.label }}</option>
+      </select>
+    </div>
   </div>
 
-  <div class="retry-queue">
-    <h3>Pending Retry Queue</h3>
-    <div *ngIf="loadingRetryQueue" class="loading">Loading retry queue…</div>
-    <table *ngIf="!loadingRetryQueue && retryQueue.length > 0">
-      <thead>
-        <tr>
-          <th>Supplier ID</th>
-          <th>Name</th>
-          <th>Status</th>
-          <th>Retry Count</th>
-          <th>Last Retry</th>
-          <th>Next Retry</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let retry of retryQueue">
-          <td>{{ retry.supplierId }}</td>
-          <td>{{ retry.supplierName ?? '-' }}</td>
-          <td>{{ retry.deliveryStatus }}</td>
-          <td>{{ retry.retryAttemptCount }}</td>
-          <td>{{ retry.lastRetryAt ? (retry.lastRetryAt | date:'short') : '-' }}</td>
-          <td>{{ retry.nextRetryAt ? (retry.nextRetryAt | date:'short') : '-' }}</td>
-          <td>
-            <button (click)="loadSupplierHistory(retry.supplierId)">View History</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <p *ngIf="!loadingRetryQueue && retryQueue.length === 0">No pending retries.</p>
+  <div *ngIf="error" class="alert alert-danger mb-0">{{ error }}</div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Total Runs</p>
+          <h3 class="mb-0">{{ supplierRuns.length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Completed Runs</p>
+          <h3 class="mb-0">{{ completedRunsCount }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <p class="text-muted small mb-1">Avg Error Rate</p>
+          <h3 class="mb-0">{{ averageErrorRate | number: '1.2-2' }}%</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="card h-100">
+        <div class="card-header">ETL Run KPI</div>
+        <div class="card-body d-flex flex-wrap gap-4">
+          <div>
+            <p class="text-muted small mb-1">Total Records Sent</p>
+            <h4 class="mb-0">{{ totalRecordsSent }}</h4>
+          </div>
+          <div>
+            <p class="text-muted small mb-1">Run Success Rate</p>
+            <h4 class="mb-0">{{ runSuccessRate | number: '1.2-2' }}%</h4>
+          </div>
+          <div>
+            <p class="text-muted small mb-1">Latest Run Status</p>
+            <span class="badge" [ngClass]="getStatusBadgeClass(latestRunStatus)">{{ latestRunStatus }}</span>
+          </div>
+          <div>
+            <p class="text-muted small mb-1">Latest Run Duration</p>
+            <h4 class="mb-0">{{ latestRunDurationMs ?? '-' }}</h4>
+          </div>
+          <div class="sparkline-box">
+            <p class="text-muted small mb-1">Records Sent Trend</p>
+            <div class="sparkline-wrap">
+              <canvas
+                baseChart
+                [type]="sparklineChartType"
+                [data]="recordsSentSparklineData"
+                [options]="sparklineOptions"></canvas>
+            </div>
+          </div>
+          <div class="sparkline-box">
+            <p class="text-muted small mb-1">Success Rate Trend</p>
+            <div class="sparkline-wrap">
+              <canvas
+                baseChart
+                [type]="sparklineChartType"
+                [data]="successRateSparklineData"
+                [options]="sparklineOptions"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="history">
-    <h3>Supplier Change History</h3>
-    <p *ngIf="selectedSupplierId === null">Select a supplier from retry queue to view history.</p>
-    <div *ngIf="loadingHistory" class="loading">Loading supplier history…</div>
-    <div *ngIf="selectedSupplierId !== null && !loadingHistory">
-      <p><strong>Supplier:</strong> {{ selectedSupplierId }}</p>
-      <table *ngIf="supplierHistory.length > 0">
-        <thead>
-          <tr>
-            <th>Snapshot ID</th>
-            <th>Run ID</th>
-            <th>Change Type</th>
-            <th>Changed At</th>
-            <th>Snapshot Hash</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let item of supplierHistory">
-            <td>{{ item.snapshotId }}</td>
-            <td>{{ item.etlRunId }}</td>
-            <td>{{ item.changeType }}</td>
-            <td>{{ item.changedAt | date:'short' }}</td>
-            <td>{{ item.snapshotHash ?? '-' }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <p *ngIf="supplierHistory.length === 0">No supplier history found.</p>
+  <div class="row g-3">
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Dispatch Trend by Run</div>
+        <div class="card-body chart-wrap">
+          <canvas baseChart [type]="lineChartType" [data]="runTrendData" [options]="lineChartOptions"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header">Quality Trend by Run</div>
+        <div class="card-body chart-wrap">
+          <canvas baseChart [type]="barChartType" [data]="qualityTrendData" [options]="barChartOptions"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+      <span>ETL Jobs</span>
+      <small *ngIf="isMockMode && jobsDataOrigin" class="text-muted">Mock source: {{ jobsDataOrigin === 'api' ? 'API' : 'Local fallback' }}</small>
+    </div>
+    <div class="card-body">
+      <div *ngIf="loading" class="text-muted">Loading…</div>
+      <div class="mb-3" *ngIf="!loading && jobs.length > 0">
+        <div class="d-flex gap-2 align-items-center">
+          <input class="form-control form-control-sm" type="text" placeholder="Filter jobs..." [(ngModel)]="jobsSearch" (ngModelChange)="resetPage('jobs')" />
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGridFilter('jobs')">Clear</button>
+        </div>
+      </div>
+      <div class="table-responsive" *ngIf="!loading && jobs.length > 0">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('jobs', 'id')">ID {{ getSortIndicator('jobs', 'id') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('jobs', 'name')">Name {{ getSortIndicator('jobs', 'name') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('jobs', 'cronSchedule')">Schedule {{ getSortIndicator('jobs', 'cronSchedule') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('jobs', 'isEnabled')">Enabled {{ getSortIndicator('jobs', 'isEnabled') }}</button></th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let job of pagedJobs">
+              <td>{{ job.id }}</td>
+              <td>{{ job.name }}</td>
+              <td><code>{{ job.cronSchedule }}</code></td>
+              <td>{{ job.isEnabled ? 'Yes' : 'No' }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="viewLogs(job)">View Logs</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-pager" *ngIf="displayedJobs.length > 0">
+        <label class="d-flex align-items-center gap-2 mb-0 small">
+          Rows
+          <select class="form-select form-select-sm" [(ngModel)]="jobsPageSize" (ngModelChange)="onPageSizeChange('jobs')">
+            <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage('jobs', displayedJobs.length)" [disabled]="getCurrentPage('jobs', displayedJobs.length) <= 1">Previous</button>
+        <span>Page {{ getCurrentPage('jobs', displayedJobs.length) }} / {{ getTotalPages('jobs', displayedJobs.length) }}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToNextPage('jobs', displayedJobs.length)" [disabled]="getCurrentPage('jobs', displayedJobs.length) >= getTotalPages('jobs', displayedJobs.length)">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" *ngIf="selectedJobId !== null">
+    <div class="card-header">Logs for Job #{{ selectedJobId }}</div>
+    <div class="card-body">
+      <div class="mb-3" *ngIf="selectedJobLogs.length > 0">
+        <div class="d-flex gap-2 align-items-center">
+          <input class="form-control form-control-sm" type="text" placeholder="Filter logs..." [(ngModel)]="logsSearch" (ngModelChange)="resetPage('logs')" />
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGridFilter('logs')">Clear</button>
+        </div>
+      </div>
+      <div class="table-responsive" *ngIf="selectedJobLogs.length > 0">
+        <table class="table table-sm table-striped align-middle mb-0">
+          <thead>
+            <tr>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('logs', 'id')">Log ID {{ getSortIndicator('logs', 'id') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('logs', 'status')">Status {{ getSortIndicator('logs', 'status') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('logs', 'startedAt')">Started {{ getSortIndicator('logs', 'startedAt') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('logs', 'finishedAt')">Finished {{ getSortIndicator('logs', 'finishedAt') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('logs', 'rowsProcessed')">Rows {{ getSortIndicator('logs', 'rowsProcessed') }}</button></th>
+              <th>Error</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of pagedJobLogs" [class]="'status-' + log.status.toLowerCase()">
+              <td>{{ log.id }}</td>
+              <td>{{ log.status }}</td>
+              <td>{{ log.startedAt | date:'short' }}</td>
+              <td>{{ log.finishedAt | date:'short' }}</td>
+              <td>{{ log.rowsProcessed ?? '-' }}</td>
+              <td>{{ log.errorMessage ?? '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-pager" *ngIf="displayedJobLogs.length > 0">
+        <label class="d-flex align-items-center gap-2 mb-0 small">
+          Rows
+          <select class="form-select form-select-sm" [(ngModel)]="logsPageSize" (ngModelChange)="onPageSizeChange('logs')">
+            <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage('logs', displayedJobLogs.length)" [disabled]="getCurrentPage('logs', displayedJobLogs.length) <= 1">Previous</button>
+        <span>Page {{ getCurrentPage('logs', displayedJobLogs.length) }} / {{ getTotalPages('logs', displayedJobLogs.length) }}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToNextPage('logs', displayedJobLogs.length)" [disabled]="getCurrentPage('logs', displayedJobLogs.length) >= getTotalPages('logs', displayedJobLogs.length)">Next</button>
+      </div>
+      <p class="mb-0" *ngIf="selectedJobLogs.length === 0">No logs found.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div class="d-flex flex-column">
+        <span>Supplier ETL Run Statistics</span>
+        <small class="text-muted">
+          Active Range:
+          {{ runFilterFrom ? (runFilterFrom | date:'short') : 'N/A' }}
+          -
+          {{ runFilterTo ? (runFilterTo | date:'short') : 'N/A' }}
+        </small>
+        <small *ngIf="isMockMode && runsDataOrigin" class="text-muted">
+          Mock source: {{ runsDataOrigin === 'api' ? 'API' : 'Local fallback' }}
+        </small>
+      </div>
+      <div class="d-flex align-items-end gap-2 flex-wrap run-filter-wrap">
+        <div>
+          <label class="form-label mb-1 small">From</label>
+          <input class="form-control form-control-sm" type="datetime-local" [(ngModel)]="runFilterFrom" />
+        </div>
+        <div>
+          <label class="form-label mb-1 small">To</label>
+          <input class="form-control form-control-sm" type="datetime-local" [(ngModel)]="runFilterTo" />
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" (click)="applyRunFilter()">Apply</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearRunFilter()">Clear</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div *ngIf="loadingRuns" class="text-muted">Loading run statistics…</div>
+      <div class="mb-3" *ngIf="!loadingRuns && supplierRuns.length > 0">
+        <div class="d-flex gap-2 align-items-center">
+          <input class="form-control form-control-sm" type="text" placeholder="Filter runs..." [(ngModel)]="runsSearch" (ngModelChange)="resetPage('runs')" />
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGridFilter('runs')">Clear</button>
+        </div>
+      </div>
+      <div class="table-responsive" *ngIf="!loadingRuns && supplierRuns.length > 0">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'runId')">Run ID {{ getSortIndicator('runs', 'runId') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'status')">Status {{ getSortIndicator('runs', 'status') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'startedAt')">Started {{ getSortIndicator('runs', 'startedAt') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'recordsIn')">Records In {{ getSortIndicator('runs', 'recordsIn') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'recordsValidated')">Validated {{ getSortIndicator('runs', 'recordsValidated') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'recordsSent')">Sent {{ getSortIndicator('runs', 'recordsSent') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'recordsFailed')">Failed {{ getSortIndicator('runs', 'recordsFailed') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'retryCount')">Retries {{ getSortIndicator('runs', 'retryCount') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'errorRatePct')">Error Rate % {{ getSortIndicator('runs', 'errorRatePct') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'p95LatencyMs')">P95 (ms) {{ getSortIndicator('runs', 'p95LatencyMs') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('runs', 'slaCompliancePct')">SLA % {{ getSortIndicator('runs', 'slaCompliancePct') }}</button></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let run of pagedRuns" [class]="'status-' + run.status.toLowerCase()">
+              <td>{{ run.runId }}</td>
+              <td>{{ run.status }}</td>
+              <td>{{ run.startedAt | date:'short' }}</td>
+              <td>{{ run.recordsIn }}</td>
+              <td>{{ run.recordsValidated }}</td>
+              <td>{{ run.recordsSent }}</td>
+              <td>{{ run.recordsFailed }}</td>
+              <td>{{ run.retryCount }}</td>
+              <td>{{ run.errorRatePct }}</td>
+              <td>{{ run.p95LatencyMs ?? '-' }}</td>
+              <td>{{ run.slaCompliancePct ?? '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-pager" *ngIf="displayedRuns.length > 0">
+        <label class="d-flex align-items-center gap-2 mb-0 small">
+          Rows
+          <select class="form-select form-select-sm" [(ngModel)]="runsPageSize" (ngModelChange)="onPageSizeChange('runs')">
+            <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage('runs', displayedRuns.length)" [disabled]="getCurrentPage('runs', displayedRuns.length) <= 1">Previous</button>
+        <span>Page {{ getCurrentPage('runs', displayedRuns.length) }} / {{ getTotalPages('runs', displayedRuns.length) }}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToNextPage('runs', displayedRuns.length)" [disabled]="getCurrentPage('runs', displayedRuns.length) >= getTotalPages('runs', displayedRuns.length)">Next</button>
+      </div>
+      <p class="mb-0" *ngIf="!loadingRuns && supplierRuns.length === 0">No ETL run statistics available.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+      <span>Pending Retry Queue</span>
+      <small *ngIf="isMockMode && retryDataOrigin" class="text-muted">Mock source: {{ retryDataOrigin === 'api' ? 'API' : 'Local fallback' }}</small>
+    </div>
+    <div class="card-body">
+      <div *ngIf="loadingRetryQueue" class="text-muted">Loading retry queue…</div>
+      <div class="mb-3" *ngIf="!loadingRetryQueue && retryQueue.length > 0">
+        <div class="d-flex gap-2 align-items-center">
+          <input class="form-control form-control-sm" type="text" placeholder="Filter retry queue..." [(ngModel)]="retrySearch" (ngModelChange)="resetPage('retry')" />
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGridFilter('retry')">Clear</button>
+        </div>
+      </div>
+      <div class="table-responsive" *ngIf="!loadingRetryQueue && retryQueue.length > 0">
+        <table class="table table-striped table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'supplierId')">Supplier ID {{ getSortIndicator('retry', 'supplierId') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'supplierName')">Name {{ getSortIndicator('retry', 'supplierName') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'deliveryStatus')">Status {{ getSortIndicator('retry', 'deliveryStatus') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'retryAttemptCount')">Retry Count {{ getSortIndicator('retry', 'retryAttemptCount') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'lastRetryAt')">Last Retry {{ getSortIndicator('retry', 'lastRetryAt') }}</button></th>
+              <th><button type="button" class="sort-btn" (click)="toggleSort('retry', 'nextRetryAt')">Next Retry {{ getSortIndicator('retry', 'nextRetryAt') }}</button></th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let retry of pagedRetryQueue">
+              <td>{{ retry.supplierId }}</td>
+              <td>{{ retry.supplierName ?? '-' }}</td>
+              <td>{{ retry.deliveryStatus }}</td>
+              <td>{{ retry.retryAttemptCount }}</td>
+              <td>{{ retry.lastRetryAt ? (retry.lastRetryAt | date:'short') : '-' }}</td>
+              <td>{{ retry.nextRetryAt ? (retry.nextRetryAt | date:'short') : '-' }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="loadSupplierHistory(retry.supplierId)">View History</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="grid-pager" *ngIf="displayedRetryQueue.length > 0">
+        <label class="d-flex align-items-center gap-2 mb-0 small">
+          Rows
+          <select class="form-select form-select-sm" [(ngModel)]="retryPageSize" (ngModelChange)="onPageSizeChange('retry')">
+            <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage('retry', displayedRetryQueue.length)" [disabled]="getCurrentPage('retry', displayedRetryQueue.length) <= 1">Previous</button>
+        <span>Page {{ getCurrentPage('retry', displayedRetryQueue.length) }} / {{ getTotalPages('retry', displayedRetryQueue.length) }}</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToNextPage('retry', displayedRetryQueue.length)" [disabled]="getCurrentPage('retry', displayedRetryQueue.length) >= getTotalPages('retry', displayedRetryQueue.length)">Next</button>
+      </div>
+      <p class="mb-0" *ngIf="!loadingRetryQueue && retryQueue.length === 0">No pending retries.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center gap-2">
+      <span>Supplier Change History</span>
+      <small *ngIf="isMockMode && historyDataOrigin" class="text-muted">Mock source: {{ historyDataOrigin === 'api' ? 'API' : 'Local fallback' }}</small>
+    </div>
+    <div class="card-body">
+      <p *ngIf="selectedSupplierId === null" class="mb-0">Select a supplier from retry queue to view history.</p>
+      <div *ngIf="loadingHistory" class="text-muted">Loading supplier history…</div>
+      <div *ngIf="selectedSupplierId !== null && !loadingHistory">
+        <p class="mb-3"><strong>Supplier:</strong> {{ selectedSupplierId }}</p>
+        <div class="mb-3" *ngIf="supplierHistory.length > 0">
+          <div class="d-flex gap-2 align-items-center">
+            <input class="form-control form-control-sm" type="text" placeholder="Filter supplier history..." [(ngModel)]="historySearch" (ngModelChange)="resetPage('history')" />
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="clearGridFilter('history')">Clear</button>
+          </div>
+        </div>
+        <div class="table-responsive" *ngIf="supplierHistory.length > 0">
+          <table class="table table-sm table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th><button type="button" class="sort-btn" (click)="toggleSort('history', 'snapshotId')">Snapshot ID {{ getSortIndicator('history', 'snapshotId') }}</button></th>
+                <th><button type="button" class="sort-btn" (click)="toggleSort('history', 'etlRunId')">Run ID {{ getSortIndicator('history', 'etlRunId') }}</button></th>
+                <th><button type="button" class="sort-btn" (click)="toggleSort('history', 'changeType')">Change Type {{ getSortIndicator('history', 'changeType') }}</button></th>
+                <th><button type="button" class="sort-btn" (click)="toggleSort('history', 'changedAt')">Changed At {{ getSortIndicator('history', 'changedAt') }}</button></th>
+                <th><button type="button" class="sort-btn" (click)="toggleSort('history', 'snapshotHash')">Snapshot Hash {{ getSortIndicator('history', 'snapshotHash') }}</button></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of pagedSupplierHistory">
+                <td>{{ item.snapshotId }}</td>
+                <td>{{ item.etlRunId }}</td>
+                <td>{{ item.changeType }}</td>
+                <td>{{ item.changedAt | date:'short' }}</td>
+                <td>{{ item.snapshotHash ?? '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid-pager" *ngIf="displayedSupplierHistory.length > 0">
+          <label class="d-flex align-items-center gap-2 mb-0 small">
+            Rows
+            <select class="form-select form-select-sm" [(ngModel)]="historyPageSize" (ngModelChange)="onPageSizeChange('history')">
+              <option *ngFor="let option of pageSizeOptions" [ngValue]="option">{{ option }}</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToPreviousPage('history', displayedSupplierHistory.length)" [disabled]="getCurrentPage('history', displayedSupplierHistory.length) <= 1">Previous</button>
+          <span>Page {{ getCurrentPage('history', displayedSupplierHistory.length) }} / {{ getTotalPages('history', displayedSupplierHistory.length) }}</span>
+          <button type="button" class="btn btn-sm btn-outline-secondary" (click)="goToNextPage('history', displayedSupplierHistory.length)" [disabled]="getCurrentPage('history', displayedSupplierHistory.length) >= getTotalPages('history', displayedSupplierHistory.length)">Next</button>
+        </div>
+        <p class="mb-0" *ngIf="supplierHistory.length === 0">No supplier history found.</p>
+      </div>
     </div>
   </div>
 </section>

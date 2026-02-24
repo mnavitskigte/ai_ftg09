@@ -1,0 +1,55 @@
+using System.Security.Claims;
+using System.Text.Encodings.Web;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Options;
+
+namespace EtlApi.Auth;
+
+public sealed class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public const string SchemeName = "ApiKey";
+    public const string HeaderName = "X-API-Key";
+
+    private readonly IConfiguration _configuration;
+
+    public ApiKeyAuthenticationHandler(
+        IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger,
+        UrlEncoder encoder,
+        IConfiguration configuration)
+        : base(options, logger, encoder)
+    {
+        _configuration = configuration;
+    }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    {
+        if (!Request.Headers.TryGetValue(HeaderName, out var providedApiKey))
+        {
+            return Task.FromResult(AuthenticateResult.Fail("Missing API key header."));
+        }
+
+        var configuredApiKey = _configuration["Auth:ApiKey"];
+        if (string.IsNullOrWhiteSpace(configuredApiKey))
+        {
+            return Task.FromResult(AuthenticateResult.Fail("API key is not configured."));
+        }
+
+        if (!string.Equals(providedApiKey, configuredApiKey, StringComparison.Ordinal))
+        {
+            return Task.FromResult(AuthenticateResult.Fail("Invalid API key."));
+        }
+
+        var claims = new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "etl-api-client"),
+            new Claim(ClaimTypes.Name, "etl-api-client")
+        };
+
+        var identity = new ClaimsIdentity(claims, SchemeName);
+        var principal = new ClaimsPrincipal(identity);
+        var ticket = new AuthenticationTicket(principal, SchemeName);
+
+        return Task.FromResult(AuthenticateResult.Success(ticket));
+    }
+}

@@ -71,15 +71,19 @@ export class EtlJobsService {
 
   constructor(private http: HttpClient) {}
 
-  getJobs(): Observable<EtlJob[]> {
-    return this.http.get<EtlJob[]>(`${this.apiBase}/api/etl-jobs`);
+  getJobs(isMock: boolean = false): Observable<EtlJob[]> {
+    const query = new URLSearchParams();
+    query.set('isMock', String(isMock));
+    return this.http.get<EtlJob[]>(`${this.apiBase}/api/etl-jobs?${query.toString()}`);
   }
 
-  getJobLogs(jobId: number): Observable<EtlJobLog[]> {
-    return this.http.get<EtlJobLog[]>(`${this.apiBase}/api/etl-jobs/${jobId}/logs`);
+  getJobLogs(jobId: number, isMock: boolean = false): Observable<EtlJobLog[]> {
+    const query = new URLSearchParams();
+    query.set('isMock', String(isMock));
+    return this.http.get<EtlJobLog[]>(`${this.apiBase}/api/etl-jobs/${jobId}/logs?${query.toString()}`);
   }
 
-  getSupplierEtlRuns(fromUtc?: string, toUtc?: string): Observable<SupplierEtlRun[]> {
+  getSupplierEtlRuns(fromUtc?: string, toUtc?: string, isMock: boolean = false): Observable<SupplierEtlRun[]> {
     const query = new URLSearchParams();
     if (fromUtc) {
       query.set('fromUtc', fromUtc);
@@ -87,16 +91,21 @@ export class EtlJobsService {
     if (toUtc) {
       query.set('toUtc', toUtc);
     }
+    query.set('isMock', String(isMock));
 
     const suffix = query.toString() ? `?${query.toString()}` : '';
     return this.http.get<SupplierEtlRun[]>(`${this.apiBase}/api/supplier-etl/runs${suffix}`);
   }
 
-  getSupplierRetryQueue(): Observable<SupplierRetryQueueItem[]> {
-    return this.http.get<SupplierRetryQueueItem[]>(`${this.apiBase}/api/supplier-etl/retry-queue`);
+  getSupplierRetryQueue(isMock: boolean = false): Observable<SupplierRetryQueueItem[]> {
+    const query = new URLSearchParams();
+    query.set('isMock', String(isMock));
+    return this.http.get<SupplierRetryQueueItem[]>(`${this.apiBase}/api/supplier-etl/retry-queue?${query.toString()}`);
   }
 
-  getSupplierHistory(supplierId: string): Observable<SupplierHistoryItem[]> {
-    return this.http.get<SupplierHistoryItem[]>(`${this.apiBase}/api/supplier-etl/suppliers/${encodeURIComponent(supplierId)}/history`);
+  getSupplierHistory(supplierId: string, isMock: boolean = false): Observable<SupplierHistoryItem[]> {
+    const query = new URLSearchParams();
+    query.set('isMock', String(isMock));
+    return this.http.get<SupplierHistoryItem[]>(`${this.apiBase}/api/supplier-etl/suppliers/${encodeURIComponent(supplierId)}/history?${query.toString()}`);
   }
 }

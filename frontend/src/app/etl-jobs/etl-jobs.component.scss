@@ -1,42 +1,53 @@
-.etl-jobs {
-  padding: 1rem;
+:host {
+  display: block;
+}
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+.chart-wrap {
+  min-height: 280px;
+}
 
-    th, td {
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
+.run-filter-wrap {
+  row-gap: 0.5rem;
+}
 
-    th {
-      background: #f5f5f5;
-      font-weight: 600;
-    }
-  }
+.sparkline-box {
+  min-width: 220px;
+  flex: 1 1 260px;
+}
 
-  .loading { color: #666; }
-  .error   { color: red; }
+.sparkline-wrap {
+  height: 70px;
+}
 
-  .logs { margin-top: 1.5rem; }
-  .runs,
-  .retry-queue,
-  .history {
-    margin-top: 1.5rem;
-  }
+.sort-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+  color: inherit;
+}
 
-  .run-filters {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    margin: 0.75rem 0;
-    flex-wrap: wrap;
-  }
+.sort-btn:hover {
+  text-decoration: underline;
+}
 
-  .status-completed { background: #e6ffe6; }
-  .status-partialfailure { background: #fff7e6; }
-  .status-failed    { background: #ffe6e6; }
-  .status-running   { background: #e6f0ff; }
+.grid-pager {
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.status-completed {
+  font-weight: 500;
+}
+
+.status-partialfailure,
+.status-failed {
+  font-weight: 500;
+}
+
+.status-running {
+  font-style: italic;
 }
