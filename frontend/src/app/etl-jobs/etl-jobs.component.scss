@@ -1,0 +1,28 @@
+.etl-jobs {
+  padding: 1rem;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th, td {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+  }
+
+  .loading { color: #666; }
+  .error   { color: red; }
+
+  .logs { margin-top: 1.5rem; }
+
+  .status-completed { background: #e6ffe6; }
+  .status-failed    { background: #ffe6e6; }
+  .status-running   { background: #e6f0ff; }
+}

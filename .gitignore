@@ -52,3 +52,17 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# ── Azure Functions ──────────────────────────────────────────────────────────
+backend/etl-function/local.settings.json
+
+# ── Node / Angular ───────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/.env
+
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.vs/
+.vscode/settings.json
+*.user

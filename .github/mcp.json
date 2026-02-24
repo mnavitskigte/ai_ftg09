@@ -1,0 +1,28 @@
+{
+  "servers": {
+    "angular-cli": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@angular/cli", "mcp"],
+      "description": "Angular CLI MCP server – provides Angular-aware code generation, component scaffolding, migration assistance and build/lint tooling for the frontend/ workspace."
+    },
+    "dotnet": {
+      "type": "stdio",
+      "command": "dotnet",
+      "args": ["tool", "run", "dotnet-mcp"],
+      "description": "dotnet MCP server – assists with .NET project management, NuGet packages, code analysis and build operations for backend/api and backend/etl-function.",
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "mssql": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-mssql"],
+      "description": "MS SQL MCP server – enables natural-language SQL queries, schema inspection and stored-procedure execution against the Azure SQL database defined in db/.",
+      "env": {
+        "MSSQL_CONNECTION_STRING": "${env:MSSQL_CONNECTION_STRING}"
+      }
+    }
+  }
+}
