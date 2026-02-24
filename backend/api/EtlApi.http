@@ -1,0 +1,11 @@
+@EtlApi_HostAddress = http://localhost:5172
+
+GET {{EtlApi_HostAddress}}/api/etl-jobs
+Accept: application/json
+
+###
+
+GET {{EtlApi_HostAddress}}/api/etl-jobs/1/logs
+Accept: application/json
+
+###

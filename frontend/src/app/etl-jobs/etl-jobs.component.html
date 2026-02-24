@@ -1,0 +1,54 @@
+<section class="etl-jobs">
+  <h2>ETL Jobs</h2>
+
+  <div *ngIf="loading" class="loading">Loading…</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <table *ngIf="!loading && jobs.length > 0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Schedule</th>
+        <th>Enabled</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let job of jobs">
+        <td>{{ job.id }}</td>
+        <td>{{ job.name }}</td>
+        <td><code>{{ job.cronSchedule }}</code></td>
+        <td>{{ job.isEnabled ? '✅' : '❌' }}</td>
+        <td><button (click)="viewLogs(job)">View Logs</button></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="selectedJobId !== null" class="logs">
+    <h3>Logs for Job #{{ selectedJobId }}</h3>
+    <table *ngIf="selectedJobLogs.length > 0">
+      <thead>
+        <tr>
+          <th>Log ID</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Finished</th>
+          <th>Rows</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of selectedJobLogs" [class]="'status-' + log.status.toLowerCase()">
+          <td>{{ log.id }}</td>
+          <td>{{ log.status }}</td>
+          <td>{{ log.startedAt | date:'short' }}</td>
+          <td>{{ log.finishedAt | date:'short' }}</td>
+          <td>{{ log.rowsProcessed ?? '-' }}</td>
+          <td>{{ log.errorMessage ?? '-' }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p *ngIf="selectedJobLogs.length === 0">No logs found.</p>
+  </div>
+</section>
